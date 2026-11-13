@@ -2,6 +2,21 @@
 #include <memory>
 #include <vector>
 #include <utility>
+using namespace std;
+
+enum class Operation {
+    NONE,
+    ADD,
+    MUL
+};
+
+const char* operation_to_string(Operation op) {
+    switch (op) {
+        case Operation::ADD: return "ADD";
+        case Operation::MUL: return "MUL";
+        default: return "NONE";
+    }
+}
 
 //Here in prev parameter, we need to store references to Value objects 
 //which contribute to current expression(Value object), these are 
@@ -14,12 +29,12 @@ template <typename T>
 //pointer to that pointer using (this) pointer because normally it will
 //give a normal pointr to that object that could get destroyed.
 //crazy shit
-class Value : public std::enable_shared_from_this<Value<T>> {
+class Value : public enable_shared_from_this<Value<T>> {
 
 private:
     T x;
 
-    using ValuePtr = std::shared_ptr<Value<T>>;
+    using ValuePtr = shared_ptr<Value<T>>;
 
     //Here we cant keep normal Value pointers because in nested expressions 
     //like a*b+c holding only Value* would let temporary a*b get destroyed
@@ -28,32 +43,35 @@ private:
     //the temporary nodes stay alive till the time we reference it
     //using a vector is sufficient
 
-    std::vector<ValuePtr> prev;
+    vector<ValuePtr> prev;
+    Operation op;
 
 public:
 
-    Value(T val, std::vector<ValuePtr> prev = {})
-        : x(val), prev(std::move(prev)) {}
+    Value(T val, vector<ValuePtr> prev = {},Operation op=Operation::NONE)
+        : x(val), prev(move(prev)),op(op) {}
 
     ValuePtr operator+(const ValuePtr& v1) {
         T out = this->x + v1->x;
 
-        return std::make_shared<Value<T>>(
+        return make_shared<Value<T>>(
             out,
-            std::vector<ValuePtr>{
+            vector<ValuePtr>{
                 this->shared_from_this(), v1
-            }
+            },
+            Operation::ADD
         );
     }
 
     ValuePtr operator*(const ValuePtr& v1) {
         T out = this->x * v1->x;
 
-        return std::make_shared<Value<T>>(
+        return make_shared<Value<T>>(
             out,
-            std::vector<ValuePtr>{
+            vector<ValuePtr>{
                 this->shared_from_this(), v1
-            }
+            },
+            Operation::MUL
         );
     }
 
@@ -61,8 +79,12 @@ public:
         return this->x;
     }
 
-    const std::vector<ValuePtr>& get_prev() const {
+    const vector<ValuePtr>& get_prev() const {
         return prev;
+    }
+
+    const Operation get_operation() const {
+        return op;
     }
 
 };
@@ -74,7 +96,7 @@ public:
 //but here operator << is to the left so it needs to be public
 //we exposed a getter for Value so that 'x' can be accessed via it.
 template<typename T>
-std::ostream& operator<<(std::ostream& os, const Value<T>& v) {
+ostream& operator<<(ostream& os, const Value<T>& v) {
 
     os << "Value(data=" << v.get_value() << ", prev={";
 
@@ -87,10 +109,10 @@ std::ostream& operator<<(std::ostream& os, const Value<T>& v) {
         first = false;
     }
 
-    os << "})";
+    os << "}, operation=" << operation_to_string(v.get_operation()) << ")";
 
     return os;
 }
 //similar example
-// std::ofstream file("out.txt")
+// ofstream file("out.txt")
 // file<<a --------This writes to a file

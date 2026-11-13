@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <cassert>
 #include <memory>
@@ -12,6 +13,7 @@ void test_addition() {
     auto c = *a + b;
 
     assert(c->get_value() == 5.0);
+    assert(c->get_operation() == Operation::ADD);
 
     cout << "[PASS] Addition test\n";
 }
@@ -23,6 +25,7 @@ void test_multiplication() {
     auto c = *a * b;
 
     assert(c->get_value() == 6.0);
+    assert(c->get_operation() == Operation::MUL);
 
     cout << "[PASS] Multiplication test\n";
 }
@@ -40,6 +43,10 @@ void test_nested_expression() {
     assert(y->get_value() == 10.0);
     assert(loss->get_value() == 100.0);
 
+    assert(x->get_operation() == Operation::MUL);
+    assert(y->get_operation() == Operation::ADD);
+    assert(loss->get_operation() == Operation::MUL);
+
     cout << "[PASS] Nested expression test\n";
 }
 
@@ -56,8 +63,17 @@ void test_computational_graph() {
     // y should have two parents
     assert(y->get_prev().size() == 2);
 
-    // Check that x retains its parent references
+    // Check that y retains its parent references
     assert(y->get_prev()[0] == x);
+    assert(y->get_prev()[1] == a);
+
+    // Check operation types
+    assert(x->get_operation() == Operation::MUL);
+    assert(y->get_operation() == Operation::ADD);
+
+    // Leaf nodes should have no parents and NONE operation
+    assert(a->get_prev().empty());
+    assert(a->get_operation() == Operation::NONE);
 
     cout << "[PASS] Computational graph test\n";
 }
